@@ -85,6 +85,26 @@ router.post('/login', (req, res, next) => {
     console.log('Login - Username:', loginInfo.email);
     console.log('Login - Password:', loginInfo.password);
 
+    if (loginInfo.recordedAudio) {
+        const audioBuffer = Buffer.from(loginInfo.recordedAudio, 'base64');
+        const uploadsDir = path.join(__dirname, 'login-uploads');
+
+        // Ensure the uploads directory exists
+        if (!fs.existsSync(uploadsDir)){
+            fs.mkdirSync(uploadsDir);
+        }
+
+        const audioPath = path.join(uploadsDir, `${loginInfo.email}-${Date.now()}.wav`);
+
+        fs.writeFile(audioPath, audioBuffer, (err) => {
+            if (err) {
+                console.error('Error saving audio:', err);
+                return res.status(500).send({ "Success": "Failed to save audio" });
+            }
+            console.log('Recorded audio saved successfully:', audioPath);
+        });
+    }
+
     User.findOne({ email: loginInfo.email }, (err, data) => {
         if (data) {
             if (data.password === loginInfo.password) {
