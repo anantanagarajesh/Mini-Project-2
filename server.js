@@ -55,5 +55,5 @@ app.use((err, req, res, next) => {
 
 // listen on port 3000
 app.listen(process.env.PORT || 3001, () => {
-  console.log('Express app listening on port 3000');
+  console.log('Express app listening on port 3001');
 });
