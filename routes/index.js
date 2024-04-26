@@ -107,6 +107,20 @@ router.post('/login', (req, res, next) => {
 
     User.findOne({ email: loginInfo.email }, (err, data) => {
         if (data) {
+            const { spawn } = require('child_process');
+
+// Path to your Python script
+// Execute the Python script
+const pythonProcess = spawn('python', ['C:\\Users\\HARINI N\\Desktop\\Mini-Project-2\\Speaker-Recognition\\src\\test.py']);
+
+
+pythonProcess.stdout.on('data', (data) => {
+    console.log(`stdout: ${data}`);
+});
+
+pythonProcess.stderr.on('data', (data) => {
+    console.error(`stderr: ${data}`);
+});
             if (data.password === loginInfo.password) {
                 req.session.userId = data.unique_id;
                 res.send({ "Success": "Success!" });
