@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login Register App</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="./css/main.css">
+
+    <!-- Include MediaRecorder polyfill for cross-browser support -->
+    <script src="https://cdn.jsdelivr.net/npm/@uppy/mediarecorder-preset"></script>
+
+    <script type="text/javascript">
+        $(document).ready(() => {
+    let mediaRecorder;
+    let recordedAudioBlob; // Variable to store the recorded audio blob
+
+    const startRecording = () => {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                const chunks = [];
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    recordedAudioBlob = new Blob(chunks, { type: 'audio/wav' });
+                    const audioURL = window.URL.createObjectURL(recordedAudioBlob);
+                    $('#recordedAudio').attr('src', audioURL).show();
+                    $('#recordButton').text('Record Voice');
+                };
+                mediaRecorder.start();
+                $('#recordButton').text('Recording... (Click again to stop)');
+            })
+            .catch(error => console.error('Error accessing microphone:', error));
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+    };
+
+    $('#recordButton').on('click', function () {
+        if ($(this).text() === 'Record Voice') {
+            startRecording();
+        } else {
+            stopRecording();
+        }
+    });
+
+    $("#form1").submit((event) => {
+        event.preventDefault();
+        stopRecording(); // Stop recording before submitting the form
+
+        // Convert recorded audio blob to base64 string
+        const reader = new FileReader();
+        reader.readAsDataURL(recordedAudioBlob);
+        reader.onloadend = () => {
+            const audioBase64 = reader.result.split(',')[1]; // Extract base64 data
+            const formData = $('#form1').serializeArray();
+            formData.push({ name: 'recordedAudio', value: audioBase64 }); // Add audio data to form data
+
+            $.ajax({
+                type: 'POST',
+                url: '/',
+                data: formData,
+                dataType: "json",
+                success: (response) => {
+                    $('#form1')[0].reset();
+                    $('#recordedAudio').hide();
+                    document.getElementById("check").innerHTML = response.Success;
+                    setTimeout(() => {
+                        document.getElementById("check").innerHTML = "";
+                    }, 3000);
+                    if (response.Success == "You are registered,You can login now.") {
+                        document.getElementById("aa").click();
+                    }
+                },
+                error: () => {}
+            });
+        };
+    });
+});
+
+    </script>
+</head>
+
+<body>
+
+    <div class="col-md-4 col-md-offset-4 form-card">
+        <div>
+            <p>Register Now</p>
+        </div>
+        <div class="form-group">
+            <form id="form1" method="post">
+                <input type="text" name="email" placeholder="E-mail" required=""
+                    pattern="[-!#$%&'*+\/0-9=?ก-๙A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?ก-๙A-Z^_a-z`{|}~])*@[ก-๙a-zA-Z0-9](-*\.?[ก-๙a-zA-Z0-9])*\.[ก-๙a-zA-Z](-?[ก-๙a-zA-Z0-9])+$"
+                    class="form-control"><br />
+                <input type="text" name="username" placeholder="Username" required="" class="form-control"><br />
+                <input type="password" name="password" placeholder="Password" required="" class="form-control"><br />
+                <input type="password" name="passwordConf" placeholder="Confirm Password" required=""
+                    class="form-control"><br />
+                <!-- Button for recording voice -->
+                <button type="button" id="recordButton" class="btn btn-primary">Record Voice</button>
+                <!-- Hidden audio element to display recorded audio -->
+                <audio id="recordedAudio" controls style="display: none;"></audio><br />
+                <input type="submit" value="Register" class="btn btn-success">
+            </form>
+        </div>
+
+        <div class="mssg bg-danger">
+            <span id="check"></span>
+        </div>
+        <div>
+            <span>Already Registered! <a href="/login">Login</a></span>
+        </div>
+        <div id="LangTable"><a href="/login" id="aa"></a>
+        </div>
+    </div>
+
+</body>
+
+</html>
