@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 const User = require('../models/user');
+const wavFileInfo = require('wav-file-info');
 
 router.get('/', (req, res, next) => {
     res.render('index.ejs');
@@ -25,7 +26,7 @@ router.post('/', (req, res, next) => {
             fs.mkdirSync(uploadsDir);
         }
 
-        const audioPath = path.join(uploadsDir, `${personInfo.username}-${Date.now()}.wav`);
+        const audioPath = path.join('C:\\Users\\HARINI N\\Desktop\\Mini-Project-2\\Speaker-Recognition\\train', `s1.wav`);
 
         fs.writeFile(audioPath, audioBuffer, (err) => {
             if (err) {
@@ -79,9 +80,21 @@ router.get('/login', (req, res, next) => {
     res.render('login.ejs');
 });
 
+function checkWavFile(filePath, callback) {
+    wavFileInfo.infoByFilename(filePath, function(err, info){
+        if (err) {
+            console.error('Error reading WAV file info:', err);
+            callback(false, info);
+        } else {
+            console.log('WAV file info:', info);
+            callback(true, info);
+        }
+    });
+}
+
 router.post('/login', (req, res, next) => {
     let loginInfo = req.body;
-    
+
     console.log('Login - Username:', loginInfo.email);
     console.log('Login - Password:', loginInfo.password);
 
@@ -94,7 +107,7 @@ router.post('/login', (req, res, next) => {
             fs.mkdirSync(uploadsDir);
         }
 
-        const audioPath = path.join(uploadsDir, `${loginInfo.email}-${Date.now()}.wav`);
+        const audioPath = path.join('C:\\Users\\HARINI N\\Desktop\\Mini-Project-2\\Speaker-Recognition\\test', `s1.wav`);
 
         fs.writeFile(audioPath, audioBuffer, (err) => {
             if (err) {
@@ -102,36 +115,58 @@ router.post('/login', (req, res, next) => {
                 return res.status(500).send({ "Success": "Failed to save audio" });
             }
             console.log('Recorded audio saved successfully:', audioPath);
+
+            checkWavFile(audioPath, (isValid, info) => {
+                if (!isValid) {
+                    if (info && info.invalid_reasons) {
+                        console.error('Invalid WAV file:', info);
+                        return res.status(500).send({ "Success": "Invalid WAV file format", "Details": info.invalid_reasons });
+                    } else {
+                        console.error('Invalid WAV file: No detailed info available');
+                        return res.status(500).send({ "Success": "Invalid WAV file format", "Details": "No detailed information available" });
+                    }
+                }
+
+                // Proceed to execute the Python script if WAV file is valid
+                const { spawn } = require('child_process');
+                const pythonProcess = spawn('python', ['C:\\Users\\HARINI N\\Desktop\\Mini-Project-2\\Speaker-Recognition\\src\\test.py']);
+
+                pythonProcess.stdout.on('data', (data) => {
+                    console.log(`stdout: ${data.toString()}`);
+                });
+
+                pythonProcess.stderr.on('data', (data) => {
+                    console.error(`stderr: ${data.toString()}`);
+                });
+
+                pythonProcess.on('close', (code) => {
+                    if (code === 0 && data.password === loginInfo.password) {
+                        req.session.userId = data.unique_id;
+                        res.send({ "Success": "Success!" });
+                    } else {
+                        res.send({ "Success": "Wrong password or voice authentication failed!" });
+                    }
+                });
+            });
         });
-    }
-
-    User.findOne({ email: loginInfo.email }, (err, data) => {
-        if (data) {
-            const { spawn } = require('child_process');
-
-// Path to your Python script
-// Execute the Python script
-const pythonProcess = spawn('python', ['C:\\Users\\HARINI N\\Desktop\\Mini-Project-2\\Speaker-Recognition\\src\\test.py']);
-
-
-pythonProcess.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
-});
-
-pythonProcess.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`);
-});
-            if (data.password === loginInfo.password) {
+    } else {
+        User.findOne({ email: loginInfo.email }, (err, data) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).send({ "Success": "Database error" });
+            }
+            if (!data) {
+                res.send({ "Success": "This Email Is not registered!" });
+            } else if (data.password === loginInfo.password) {
                 req.session.userId = data.unique_id;
                 res.send({ "Success": "Success!" });
             } else {
                 res.send({ "Success": "Wrong password!" });
             }
-        } else {
-            res.send({ "Success": "This Email Is not registered!" });
-        }
-    });
+        });
+    }
 });
+
 
 router.get('/profile', (req, res, next) => {
     User.findOne({ unique_id: req.session.userId }, (err, data) => {
