@@ -46,7 +46,7 @@ def training(nfiltbank, orderLPC):
             plt.axis(ymin = -1, ymax = 1)
             plt.xlabel('Number of features')
     
-    plt.show()
+    #plt.show()
     print('Training complete')
     
     #plotting 5th and 6th dimension MFCC features on a 2D plane
@@ -68,7 +68,7 @@ def training(nfiltbank, orderLPC):
     c2 = plt.scatter(codebooks[1,6,:], codebooks[1,4,:], s = 100, color = 'b', marker = '+')
     plt.grid()
     plt.legend((s1, s2, c1, c2), ('Sp1','Sp2','Sp1 centroids', 'Sp2 centroids'), scatterpoints = 1, loc = 'upper left')    
-    plt.show()
+    #plt.show()
    
     
     return (codebooks_mfcc, codebooks_lpc)

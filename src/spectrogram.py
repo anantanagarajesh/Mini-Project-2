@@ -19,9 +19,9 @@ def nearestPow2(inp):
 def stft(signal, fs, nfft, overlap):
 
     #plotting time domain signal
-    plt.figure(1)
+    #plt.figure(1)
     t = np.arange(0,len(signal)/fs, 1/fs)
-    plt.plot(t,signal)
+    #plt.plot(t,signal)
     plt.axis(xmax = 1)
     plt.xlabel('Time in seconds')
     plt.ylabel('Amplitude')
@@ -49,15 +49,15 @@ def stft(signal, fs, nfft, overlap):
         start = start + nfft - hop_size 
         
     #plot spectrogram
-    plt.figure(2)
+    #plt.figure(2)
     freq = (fs/(2*nfft)) * np.arange(0,nfft,1)
     time = np.arange(0,nFrames)*(slength/(fs*nFrames))
-    plt.imshow(STFT, extent = [0,max(time),0,max(freq)],origin='lower', cmap='jet', interpolation='nearest', aspect='auto')
+    #plt.imshow(STFT, extent = [0,max(time),0,max(freq)],origin='lower', cmap='jet', interpolation='nearest', aspect='auto')
     plt.ylabel('Frequency in Hz')
     plt.xlabel('Time in seconds')
     plt.axis([0,max(time),0,np.max(freq)])
     plt.title('Spectrogram of speech')
-    plt.show()
+    #plt.show()
     return (STFT, time, freq)
  
     
