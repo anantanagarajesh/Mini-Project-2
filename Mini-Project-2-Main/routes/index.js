@@ -17,17 +17,41 @@ router.post('/', (req, res, next) => {
 
     // Spawn a Python process to run the login record script
     const { spawn } = require('child_process');
-    const pythonProcess = spawn('python', ['C:\\Users\\JAYANTH\\Desktop\\Speaker-Recognition-master\\Mini-Project-2-Main\\signuprecord.py']);
 
-    pythonProcess.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-    });
+// Spawn a Python process
+const pythonProcess = spawn('python', ['C:\\Users\\JAYANTH\\Desktop\\Speaker-Recognition-master\\Mini-Project-2-Main\\signuprecord.py']);
 
-    pythonProcess.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+let stdoutData = '';
+let stderrData = '';
 
+// Collect stdout data
+pythonProcess.stdout.on('data', (data) => {
+    stdoutData += data.toString();
+});
+
+// Collect stderr data
+pythonProcess.stderr.on('data', (data) => {
+    stderrData += data.toString();
+});
+
+// When the process exits, process the collected data
+pythonProcess.on('close', (code) => {
+    // Trim any extraneous whitespace from stdout data
+    const result = stdoutData.trim();
+
+    if (stderrData) {
+        console.error(`stderr: ${stderrData}`);
+    } else {
+        console.log(`stdoutData: ${stdoutData}`);
+        console.log(`result: ${result}`);
+        console.log(`result again: ${result}`);
+    }
     console.log('Recorded audio saved successfully');
+});
+
+
+    
+
 
     // Handle audio file if present
     if (personInfo.recordedAudio) {
@@ -133,40 +157,52 @@ router.post('/login', (req, res, next) => {
 
     User.findOne({ email: loginInfo.email }, (err, data) => {
         if (data) {
-            const { spawn } = require('child_process');
-
-            // Path to your Python script
+            const name = data.username;
+            const email = data.email;
+            const unique_id = data.unique_id;
             // Execute the Python script
             const pythonProcess = spawn('python', ['C:\\Users\\JAYANTH\\Desktop\\Speaker-Recognition-master\\src\\test.py']);
+            let output = "";
 
-            pythonProcess.stdout.on('data', (data) => {
-                console.log(`stdout: ${data}`);
+            pythonProcess.stdout.on('data', (data1) => {
+                output += data1.toString().trim();
+                console.log(`stdout: ${output}`);
             });
 
-            pythonProcess.stderr.on('data', (data) => {
-                console.error(`stderr: ${data}`);
-            });
+            pythonProcess.on('close', () => {
+                console.log(`stdout (third time): ${output}`);
+                if (output === "yes") {
+                    req.session.userId = "unique_id"; // Assuming you're using Express.js and setting a session variable
+                    res.send({ "Success": "Success!" });
+                    router.get('/profile', (req, res, next) => {
+                        User.findOne({ unique_id: req.session.userId }, (err, data) => {
+                            
+                            res.render('data.ejs', { "name": name, "email": email });
+                            
+                        });
+                    });
+            
 
-            if (data.password === loginInfo.password) {
-                req.session.userId = data.unique_id;
-                res.send({ "Success": "Success!" });
-            } else {
-                res.send({ "Success": "Wrong password!" });
-            }
+                } 
+                else if(output === "no"){
+                    res.send({ "Success": "wrong person!" });
+                    
+                    res.redirect('/');
+                }
+                else {
+                    res.status(401).send({ "Error": "Wrong password!" });
+                    res.redirect('/');
+                }
+
+                // Route to profile page
+                
+            });
         } else {
             res.send({ "Success": "This Email Is not registered!" });
         }
     });
-});
 
-router.get('/profile', (req, res, next) => {
-    User.findOne({ unique_id: req.session.userId }, (err, data) => {
-        if (!data) {
-            res.redirect('/');
-        } else {
-            res.render('data.ejs', { "name": data.username, "email": data.email });
-        }
-    });
+
 });
 
 router.get('/logout', (req, res, next) => {
